@@ -5,6 +5,7 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QLabel>
+#include <QLayout>
 #include <QLineEdit>
 #include <QMimeData>
 #include <QPlainTextEdit>
@@ -50,7 +51,18 @@ private slots:
         QTRY_VERIFY(window.isNull());
         page = nullptr;
     }
+    void originalLayoutAndChrome_data() {
+        QTest::addColumn<bool>("tallerPath");
+        QTest::newRow("default-height") << false;
+        QTest::newRow("different-control-heights") << true;
+    }
     void originalLayoutAndChrome() {
+        QFETCH(bool, tallerPath);
+        if (tallerPath) {
+            auto *path = page->findChild<QLineEdit *>("filePath");
+            path->setMinimumHeight(path->sizeHint().height() + 6);
+            page->layout()->activate();
+        }
         QVERIFY(window->titleBar());
         QVERIFY(window->windowAgent());
         QVERIFY(window->titleBar()->isVisible());
@@ -74,7 +86,10 @@ private slots:
         QVERIFY(select);
         QCOMPARE(select->text(), QStringLiteral("选择·aapt"));
         auto *path = page->findChild<QLineEdit *>("filePath");
-        QCOMPARE(select->mapTo(page, QPoint{}).y(), path->mapTo(page, QPoint{}).y());
+        // 同一行按中心对齐；字体和样式会改变控件高度，奇偶高度允许一像素取整差。
+        const int selectCenter = select->mapTo(page, select->rect().center()).y();
+        const int pathCenter = path->mapTo(page, path->rect().center()).y();
+        QVERIFY(qAbs(selectCenter - pathCenter) <= 1);
         QVERIFY(select->mapTo(page, QPoint{}).x() > path->mapTo(page, QPoint{}).x());
         QCOMPARE(page->findChild<QLabel *>("hint")->text(), QStringLiteral("将apk拖入窗口或选择按钮处选择apk包"));
     }
