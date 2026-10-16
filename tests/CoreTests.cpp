@@ -67,6 +67,15 @@ private slots:
         QCOMPARE(defaults.metadata.label, "Default");
         QCOMPARE(zzapk::parseBadging("package: name='org.test'\napplication: label='App' icon=''\n").metadata.label, "App");
     }
+    void unescapedApostropheAndQuotedLabel() {
+        // 真实 aapt 保留单引号，仅对双引号和反斜线等字符转义。
+        const auto result = zzapk::parseBadging(QString::fromUtf8(
+            R"(package: name='org.test' versionCode='7' versionName='it's \"2\"' platformBuildVersionName='14')"
+            "\n"
+            R"(application-label:'测试 \"双引号\"')"));
+        QCOMPARE(result.metadata.versionName, QStringLiteral("it's \"2\""));
+        QCOMPARE(result.metadata.label, QStringLiteral("测试 \"双引号\""));
+    }
     void rejectInvalidOutput() {
         QVERIFY(!zzapk::parseBadging("ERROR: invalid APK\n").error.isEmpty());
         QVERIFY(!zzapk::parseBadging("uses-permission: name='org.fake'\n").error.isEmpty());

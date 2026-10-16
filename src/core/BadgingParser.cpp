@@ -10,7 +10,7 @@ QString unescape(const QString &value)
     result.reserve(value.size());
     for (qsizetype i = 0; i < value.size(); ++i) {
         if (value[i] == u'\\' && i + 1 < value.size()
-            && (value[i + 1] == u'\\' || value[i + 1] == u'\'')) {
+            && (value[i + 1] == u'\\' || value[i + 1] == u'\'' || value[i + 1] == u'"')) {
             ++i;
         }
         result += value[i];
@@ -19,8 +19,9 @@ QString unescape(const QString &value)
 }
 QString attribute(const QString &line, const QString &name)
 {
+    // aapt 不转义值内的单引号；属性结束还需匹配下一属性或记录结尾。
     const QRegularExpression expression(
-        QStringLiteral(R"((?:^|\s)%1='((?:\\.|[^'\\])*)')")
+        QStringLiteral(R"((?:^|\s)%1='((?:\\.|'(?!\s+[A-Za-z][A-Za-z0-9_-]*=|$)|[^'\\])*)'(?=\s+[A-Za-z][A-Za-z0-9_-]*=|$))")
             .arg(QRegularExpression::escape(name)));
     return unescape(expression.match(line).captured(1));
 }
