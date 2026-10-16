@@ -66,6 +66,14 @@ private slots:
         QVERIFY(window->titleBar());
         QVERIFY(window->windowAgent());
         QVERIFY(window->titleBar()->isVisible());
+        // 保留框架默认的标题栏按钮，包括置顶和主题切换入口。
+        for (const auto button : {ZzFluentUI::ZzTitleBarButton::Minimize,
+                 ZzFluentUI::ZzTitleBarButton::Maximize,
+                 ZzFluentUI::ZzTitleBarButton::Close,
+                 ZzFluentUI::ZzTitleBarButton::AlwaysOnTop,
+                 ZzFluentUI::ZzTitleBarButton::Theme}) {
+            QVERIFY(window->titleBar()->isButtonVisible(button));
+        }
         QVERIFY(window->navigationPane()->isHidden());
         QVERIFY(window->windowFlags().testFlag(Qt::WindowStaysOnTopHint));
         QCOMPARE(window->size(), QSize(500, 731));

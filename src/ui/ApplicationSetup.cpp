@@ -2,7 +2,6 @@
 #include "ApkInfoPage.h"
 #include <QCoreApplication>
 #include <QIcon>
-#include <ZzFluentUI/ZzFluentTitleBar.h>
 #include <ZzFluentUI/ZzNavigationPane.h>
 #include <ZzPureTools/ZzApplicationBuilder.h>
 #include <ZzPureTools/ZzApplicationWindow.h>
@@ -23,7 +22,6 @@ ZzCore::ZzResult<void> buildApplication(ZzPureTools::ZzPureApplication &applicat
         window.setMinimumSize(500, 700);
         // 单页工具无需导航栏；保留框架标题栏和原有默认置顶行为。
         window.navigationPane()->hide();
-        window.titleBar()->setCommandButtonsVisible(false);
         return ZzCore::ZzResult<void>::success();
     });
     if (!configured) return configured;
