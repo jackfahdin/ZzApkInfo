@@ -44,6 +44,19 @@ if(ZZAPK_BUILD_APP)
             "${CMAKE_CURRENT_SOURCE_DIR}/tools/aapt2.exe"
             "$<TARGET_FILE_DIR:ZzApkInfo>"
     )
+    if(WIN32)
+        enable_language(RC)
+        configure_file(cmake/version.rc.in "${CMAKE_CURRENT_BINARY_DIR}/version.rc" @ONLY)
+        target_sources(ZzApkInfo PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/version.rc")
+        get_target_property(qmakePath Qt6::qmake IMPORTED_LOCATION)
+        get_filename_component(qtBinDirectory "${qmakePath}" DIRECTORY)
+        find_program(ZZAPK_WINDEPLOYQT windeployqt HINTS "${qtBinDirectory}" NO_DEFAULT_PATH REQUIRED)
+        configure_file(cmake/DeployWindows.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/DeployWindows.cmake" @ONLY)
+        add_custom_target(package-windows
+            COMMAND ${CMAKE_COMMAND} "-DAPP=$<TARGET_FILE:ZzApkInfo>" "-DCONFIG=$<CONFIG>"
+                -P "${CMAKE_CURRENT_BINARY_DIR}/DeployWindows.cmake"
+            DEPENDS ZzApkInfo VERBATIM)
+    endif()
     if(BUILD_TESTING)
         add_test(NAME startup COMMAND ZzApkInfo --smoke)
         set_tests_properties(startup PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 15)
@@ -52,6 +65,6 @@ if(ZZAPK_BUILD_APP)
         set_target_properties(window_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests/bin")
         add_dependencies(window_tests fake_aapt)
         add_test(NAME window COMMAND window_tests)
-        set_tests_properties(window PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+        set_tests_properties(window PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 30)
     endif()
 endif()

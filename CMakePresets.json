@@ -1,0 +1,40 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {"major": 3, "minor": 25, "patch": 0},
+  "configurePresets": [
+    {
+      "name": "windows-msvc-release",
+      "displayName": "Windows x64 / MSVC / Release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows"},
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "cl",
+        "CMAKE_PREFIX_PATH": "$env{QT_ROOT}",
+        "BUILD_TESTING": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "windows-msvc-release",
+      "configurePreset": "windows-msvc-release",
+      "targets": ["ZzApkInfo", "core_tests", "analyzer_tests", "window_tests", "real_tools_tests"]
+    },
+    {
+      "name": "windows-package",
+      "configurePreset": "windows-msvc-release",
+      "targets": ["package-windows"]
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "windows-msvc-release",
+      "configurePreset": "windows-msvc-release",
+      "output": {"outputOnFailure": true},
+      "execution": {"noTestsAction": "error"},
+      "environment": {"PATH": "$env{QT_ROOT}/bin;$penv{PATH}"}
+    }
+  ]
+}

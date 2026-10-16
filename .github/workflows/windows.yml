@@ -1,0 +1,51 @@
+name: Windows
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-test-package:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          arch: win64_msvc2022_64
+          cache: true
+      - name: Configure
+        shell: pwsh
+        run: |
+          "QT_ROOT=$env:QT_ROOT_DIR" >> $env:GITHUB_ENV
+          $env:QT_ROOT = $env:QT_ROOT_DIR
+          cmake --preset windows-msvc-release
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Build
+        run: cmake --build --preset windows-msvc-release --parallel 4
+      - name: Test including bundled aapt and aapt2
+        run: ctest --preset windows-msvc-release
+      - name: Deploy
+        run: cmake --build --preset windows-package
+      - name: Smoke test deployed package without SDK PATH
+        shell: pwsh
+        run: |
+          $dist = (Resolve-Path 'build/windows-msvc-release/dist').Path
+          $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
+          Remove-Item Env:QT_PLUGIN_PATH -ErrorAction SilentlyContinue
+          Remove-Item Env:QT_QPA_PLATFORM_PLUGIN_PATH -ErrorAction SilentlyContinue
+          $process = Start-Process "$dist/ZzApkInfo.exe" -ArgumentList '--smoke' -WorkingDirectory $env:TEMP -PassThru
+          if (-not $process.WaitForExit(15000)) {
+            $process.Kill()
+            throw 'Deployed application timed out'
+          }
+          if ($process.ExitCode -ne 0) { throw "Smoke failed: $($process.ExitCode)" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ZzApkInfo-windows-x64
+          path: build/windows-msvc-release/dist/
+          if-no-files-found: error

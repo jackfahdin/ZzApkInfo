@@ -1,0 +1,49 @@
+# 此脚本只由 package-windows 目标运行，发布目录固定在构建树内部。
+if(NOT CONFIG STREQUAL "Release")
+    message(FATAL_ERROR "package-windows requires a Release build")
+endif()
+set(stage "@CMAKE_BINARY_DIR@/dist")
+if(NOT EXISTS "${APP}")
+    message(FATAL_ERROR "Build ZzApkInfo before deploying")
+endif()
+file(REMOVE_RECURSE "${stage}")
+file(MAKE_DIRECTORY "${stage}/licenses/ZzPureTools")
+file(COPY "${APP}" "@PROJECT_SOURCE_DIR@/tools/aapt.exe"
+    "@PROJECT_SOURCE_DIR@/tools/aapt2.exe" "@PROJECT_SOURCE_DIR@/README.md"
+    DESTINATION "${stage}")
+file(COPY "@PROJECT_SOURCE_DIR@/licenses/" DESTINATION "${stage}/licenses")
+file(COPY "@PROJECT_SOURCE_DIR@/tools/NOTICE.txt" DESTINATION "${stage}/licenses/Android")
+file(COPY "@zzpuretools_SOURCE_DIR@/LICENSE"
+    "@zzpuretools_SOURCE_DIR@/docs/third-party/THIRD_PARTY_NOTICES.md"
+    DESTINATION "${stage}/licenses/ZzPureTools")
+file(COPY "@zzpuretools_SOURCE_DIR@/ZzThirdParty/ZzLog/LICENSE"
+    DESTINATION "${stage}/licenses/ZzLog")
+file(COPY "@zzpuretools_SOURCE_DIR@/ZzThirdParty/ZzLog/licenses/"
+    DESTINATION "${stage}/licenses/ZzLog")
+execute_process(COMMAND "@ZZAPK_WINDEPLOYQT@" --release --no-compiler-runtime
+    --no-translations --dir "${stage}" "${stage}/ZzApkInfo.exe"
+    RESULT_VARIABLE deploymentResult)
+if(NOT deploymentResult EQUAL 0)
+    message(FATAL_ERROR "windeployqt failed: ${deploymentResult}")
+endif()
+# Qt 6.8 的 --compiler-runtime 在 Release 下只带安装器；便携包需旁置 CRT DLL。
+file(TO_CMAKE_PATH "$ENV{VCToolsRedistDir}" redistRoot)
+if(NOT redistRoot)
+    message(FATAL_ERROR "VCToolsRedistDir is absent; run from an x64 MSVC developer shell")
+endif()
+file(GLOB crtDirectories LIST_DIRECTORIES TRUE "${redistRoot}/x64/Microsoft.VC*.CRT")
+list(SORT crtDirectories COMPARE NATURAL ORDER DESCENDING)
+if(NOT crtDirectories)
+    message(FATAL_ERROR "MSVC x64 CRT redistribution directory is absent: ${redistRoot}")
+endif()
+list(GET crtDirectories 0 crtDirectory)
+file(GLOB crtLibraries "${crtDirectory}/*.dll")
+file(COPY ${crtLibraries} DESTINATION "${stage}")
+foreach(required IN ITEMS msvcp140.dll vcruntime140.dll vcruntime140_1.dll)
+    if(NOT EXISTS "${stage}/${required}")
+        message(FATAL_ERROR "Portable package is missing ${required}")
+    endif()
+endforeach()
+file(WRITE "${stage}/build-info.txt"
+    "ZzApkInfo @PROJECT_VERSION@\nQt @Qt6_VERSION@\nZzPureTools 9077bbebd972a5a1dc1e7115a6a5b23f0132af20\n")
+message(STATUS "Windows package: ${stage}")
