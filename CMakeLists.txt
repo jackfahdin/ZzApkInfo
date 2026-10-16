@@ -24,7 +24,7 @@ if(ZZAPK_BUILD_APP)
 endif()
 
 # 业务与测试在后续分类提交中添加，构建配置不生成任何源码文件。
-add_library(zzapk_core STATIC src/core/BadgingParser.cpp src/core/FileHasher.cpp)
+add_library(zzapk_core STATIC src/core/BadgingParser.cpp src/core/FileHasher.cpp src/core/ApkAnalyzer.cpp)
 target_include_directories(zzapk_core PUBLIC src)
 target_link_libraries(zzapk_core PUBLIC Qt6::Core Qt6::Concurrent)
 if(BUILD_TESTING)
