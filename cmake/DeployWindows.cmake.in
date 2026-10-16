@@ -13,12 +13,12 @@ file(COPY "${APP}" "@PROJECT_SOURCE_DIR@/tools/aapt.exe"
     DESTINATION "${stage}")
 file(COPY "@PROJECT_SOURCE_DIR@/licenses/" DESTINATION "${stage}/licenses")
 file(COPY "@PROJECT_SOURCE_DIR@/tools/NOTICE.txt" DESTINATION "${stage}/licenses/Android")
-file(COPY "@zzpuretools_SOURCE_DIR@/LICENSE"
-    "@zzpuretools_SOURCE_DIR@/docs/third-party/THIRD_PARTY_NOTICES.md"
+file(COPY "@ZZAPK_ZZPURETOOLS_SOURCE_DIR@/LICENSE"
+    "@ZZAPK_ZZPURETOOLS_SOURCE_DIR@/docs/third-party/THIRD_PARTY_NOTICES.md"
     DESTINATION "${stage}/licenses/ZzPureTools")
-file(COPY "@zzpuretools_SOURCE_DIR@/ZzThirdParty/ZzLog/LICENSE"
+file(COPY "@ZZAPK_ZZPURETOOLS_SOURCE_DIR@/ZzThirdParty/ZzLog/LICENSE"
     DESTINATION "${stage}/licenses/ZzLog")
-file(COPY "@zzpuretools_SOURCE_DIR@/ZzThirdParty/ZzLog/licenses/"
+file(COPY "@ZZAPK_ZZPURETOOLS_SOURCE_DIR@/ZzThirdParty/ZzLog/licenses/"
     DESTINATION "${stage}/licenses/ZzLog")
 execute_process(COMMAND "@ZZAPK_WINDEPLOYQT@" --release --no-compiler-runtime
     --no-translations --dir "${stage}" "${stage}/ZzApkInfo.exe"
@@ -45,5 +45,5 @@ foreach(required IN ITEMS msvcp140.dll vcruntime140.dll vcruntime140_1.dll)
     endif()
 endforeach()
 file(WRITE "${stage}/build-info.txt"
-    "ZzApkInfo @PROJECT_VERSION@\nQt @Qt6_VERSION@\nZzPureTools 9077bbebd972a5a1dc1e7115a6a5b23f0132af20\n")
+    "ZzApkInfo @PROJECT_VERSION@\nQt @Qt6_VERSION@\nZzPureTools @ZZAPK_ZZPURETOOLS_REVISION@\n")
 message(STATUS "Windows package: ${stage}")

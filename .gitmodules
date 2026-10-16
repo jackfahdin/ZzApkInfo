@@ -1,0 +1,3 @@
+[submodule "ZzPureTools"]
+	path = third_party/ZzPureTools
+	url = https://github.com/jackfahdin/ZzPureTools.git
