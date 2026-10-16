@@ -132,18 +132,18 @@ private slots:
         QTest::mouseClick(page->findChild<QPushButton *>("selectButton"), Qt::RightButton);
         auto *output = page->findChild<QPlainTextEdit *>("output");
         QMimeData mime; mime.setUrls({QUrl::fromLocalFile(apk(QStringLiteral("拖放 空格.apk")))});
-        QDragEnterEvent enter({5, 5}, Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+        QDragEnterEvent enter(QPoint(5, 5), Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
         QApplication::sendEvent(output->viewport(), &enter);
         QVERIFY(enter.isAccepted());
-        QDropEvent drop({5, 5}, Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+        QDropEvent drop(QPointF(5, 5), Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
         QApplication::sendEvent(output->viewport(), &drop);
         QVERIFY(drop.isAccepted());
         QTRY_COMPARE(page->findChild<QLineEdit *>("packageName")->text(), QStringLiteral("拖放 空格"));
         mime.setUrls({QUrl("https://example.com/file.apk")});
-        QDragEnterEvent remote({5, 5}, Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+        QDragEnterEvent remote(QPoint(5, 5), Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
         QApplication::sendEvent(output->viewport(), &remote); QVERIFY(!remote.isAccepted());
         mime.setUrls({QUrl::fromLocalFile(apk("a.apk")), QUrl::fromLocalFile(apk("b.apk"))});
-        QDragEnterEvent multiple({5, 5}, Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+        QDragEnterEvent multiple(QPoint(5, 5), Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
         QApplication::sendEvent(output->viewport(), &multiple); QVERIFY(!multiple.isAccepted());
     }
     void replaceRunningAnalysisAndReportErrors() {
