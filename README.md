@@ -1,20 +1,28 @@
 # ZzApkInfo
 
+[![Windows 持续构建](https://github.com/jackfahdin/ZzApkInfo/actions/workflows/windows.yml/badge.svg)](https://github.com/jackfahdin/ZzApkInfo/actions/workflows/windows.yml)
+
 面向 Windows 的 APK 信息查看工具，使用 **C++20、Qt 6 和 [ZzPureTools](https://github.com/jackfahdin/ZzPureTools)**。
+
+## 下载
+
+[Windows x64 ZIP](https://github.com/jackfahdin/ZzApkInfo/releases/download/continuous-build/ZzApkInfo-continuous-windows-x64.zip) · [SHA-256 校验文件](https://github.com/jackfahdin/ZzApkInfo/releases/download/continuous-build/ZzApkInfo-continuous-windows-x64.zip.sha256) · [预发布页面](https://github.com/jackfahdin/ZzApkInfo/releases/tag/continuous-build)
+
+持续构建使用 **Release** 配置。主分支通过编译、测试和解压启动检查后，自动更新 `continuous-build` 预发布。
 
 ## 功能
 
-- 打开或拖入 APK，查看应用名称、包名、启动类、版本名称、版本代码和文件 MD5。
-- 支持 aapt / aapt2，切换工具后自动重新解析当前文件。
-- 显示完整解析输出，工具警告和错误单独展示；结果可选择、复制。
-- 支持后台分析、进度显示、取消和重新解析。
-- 可切换窗口置顶；`Ctrl+O` 打开文件，`Esc` 取消分析。
+- 打开或拖入 APK，查看应用名称、包名、类名、版本和文件 MD5。
+- 右键点击「选择·aapt」切换 aapt / aapt2，并自动重新解析当前文件。
+- 显示完整解析输出及工具提示，结果可选择、复制。
+- 后台计算 MD5 并显示进度，切换文件后自动更新结果。
+- 窗口默认置顶；支持 `Ctrl+O` 打开文件。
 
 解析过程在本机完成，不上传 APK，不需要 Java 或 Android 设备。
 
 ## 使用
 
-解压发布包后运行 `ZzApkInfo.exe`，将 APK 拖入窗口或点击「打开 APK」。也可以通过命令行打开文件：
+解压发布包后运行 `ZzApkInfo.exe`，将 APK 拖入窗口或左键点击「选择·aapt」。也可以通过命令行打开文件：
 
 ```powershell
 ZzApkInfo.exe "D:\Apps\示例.apk"
@@ -55,6 +63,6 @@ cmake --build --preset windows-package
 
 [ZzPureTools](https://github.com/jackfahdin/ZzPureTools) 以 Git 子模块保存在 `third_party/ZzPureTools`，版本由仓库中的子模块提交记录固定。
 
-测试覆盖 MD5、元数据解析、取消与错误处理、文件切换、界面拖放，以及真实 aapt/aapt2 对特殊文件名的解析。Windows CI 执行构建、测试、打包和启动检查，通过后上传发布包。
+测试覆盖 MD5、元数据解析、取消与错误处理、文件切换、界面拖放，以及真实 aapt/aapt2 对特殊文件名的解析。Windows CI 执行构建、测试、打包和解压启动检查。主分支推送成功后更新持续预发布；PR 和手动构建只验证并保留 Actions 产物。
 
 第三方许可证随发布包保留，Qt 许可说明见 [licenses/Qt](licenses/Qt/README.md)。
