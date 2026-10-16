@@ -135,7 +135,7 @@ bool ApkAnalyzer::analyze(const QString &path, ApkTool tool)
         processDone_ = true;
         if (result_.error.isEmpty()) {
             if (status != QProcess::NormalExit || code != 0) {
-                result_.error = QStringLiteral("解析工具退出失败（退出码 %1），请查看工具诊断。").arg(code);
+                result_.error = QStringLiteral("解析工具退出失败（退出码 %1），请查看下方输出。").arg(code);
             } else {
                 const auto parsed = parseBadging(QString::fromUtf8(stdout_));
                 result_.metadata = parsed.metadata;

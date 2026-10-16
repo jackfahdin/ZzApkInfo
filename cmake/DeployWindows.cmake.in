@@ -20,6 +20,9 @@ file(COPY "@ZZAPK_ZZPURETOOLS_SOURCE_DIR@/ZzThirdParty/ZzLog/LICENSE"
     DESTINATION "${stage}/licenses/ZzLog")
 file(COPY "@ZZAPK_ZZPURETOOLS_SOURCE_DIR@/ZzThirdParty/ZzLog/licenses/"
     DESTINATION "${stage}/licenses/ZzLog")
+file(COPY "@ZZAPK_ZZPURETOOLS_SOURCE_DIR@/ZzThirdParty/qwindowkit/LICENSE"
+    "@ZZAPK_ZZPURETOOLS_SOURCE_DIR@/ZzThirdParty/qwindowkit/docs/framelesshelper-related.md"
+    DESTINATION "${stage}/licenses/QWindowKit")
 execute_process(COMMAND "@ZZAPK_WINDEPLOYQT@" --release --no-compiler-runtime
     --no-translations --dir "${stage}" "${stage}/ZzApkInfo.exe"
     RESULT_VARIABLE deploymentResult)
@@ -45,5 +48,5 @@ foreach(required IN ITEMS msvcp140.dll vcruntime140.dll vcruntime140_1.dll)
     endif()
 endforeach()
 file(WRITE "${stage}/build-info.txt"
-    "ZzApkInfo @PROJECT_VERSION@\nQt @Qt6_VERSION@\nZzPureTools @ZZAPK_ZZPURETOOLS_REVISION@\n")
+    "ZzApkInfo @PROJECT_VERSION@\nSource @ZZAPK_SOURCE_REVISION@\nQt @Qt6_VERSION@\nZzPureTools @ZZAPK_ZZPURETOOLS_REVISION@\n")
 message(STATUS "Windows package: ${stage}")

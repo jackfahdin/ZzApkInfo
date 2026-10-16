@@ -3,7 +3,6 @@
 #include <QWidget>
 #include <array>
 
-class QComboBox;
 class QLabel;
 class QLineEdit;
 class QPlainTextEdit;
@@ -11,11 +10,11 @@ class QProgressBar;
 class QPushButton;
 class QMimeData;
 namespace zzapk {
-/** @brief 纯代码构建的 APK 信息窗口，负责交互和展示，不承担解析工作。 */
-class MainWindow final : public QWidget {
+/** @brief APK 信息页面，负责交互和展示，不承担解析工作。 */
+class ApkInfoPage final : public QWidget {
     Q_OBJECT
 public:
-    explicit MainWindow(const QString &toolsDirectory, QWidget *parent = nullptr);
+    explicit ApkInfoPage(const QString &toolsDirectory, QWidget *parent = nullptr);
     bool openFile(const QString &path);
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -25,14 +24,12 @@ private:
     [[nodiscard]] QString droppedApk(const QMimeData *mime) const;
     ApkAnalyzer analyzer_;
     QString currentPath_;
-    QComboBox *tool_ = nullptr;
+    ApkTool tool_ = ApkTool::Aapt;
+    QPushButton *select_ = nullptr;
     QLineEdit *path_ = nullptr;
-    std::array<QLineEdit *, 6> fields_{};
+    std::array<QLineEdit *, 5> fields_{};
     QPlainTextEdit *output_ = nullptr;
-    QPlainTextEdit *diagnostics_ = nullptr;
     QProgressBar *progress_ = nullptr;
-    QLabel *status_ = nullptr;
-    QPushButton *retry_ = nullptr;
-    QPushButton *cancel_ = nullptr;
+    void switchTool();
 };
 }

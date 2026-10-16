@@ -24,6 +24,6 @@ int main(int argc, char **argv)
     const auto package = QFileInfo(args[3]).baseName().toUtf8();
     std::printf("package: name='%s' versionCode='1' versionName='1.0'\n", package.constData());
     std::puts("application-label:'Example'");
-    std::fputs("tool warning", stderr);
+    std::fprintf(stderr, "tool warning (%s)", QFileInfo(app.applicationFilePath()).fileName().toUtf8().constData());
     return 0;
 }

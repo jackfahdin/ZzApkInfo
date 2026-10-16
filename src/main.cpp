@@ -1,15 +1,20 @@
-#include "ui/MainWindow.h"
+#include "ui/ApplicationSetup.h"
+#include "ui/ApkInfoPage.h"
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QFileInfo>
 #include <QIcon>
 #include <QTimer>
-#include <ZzFluentUI/ZzFluentStyle.h>
-#include <ZzFluentUI/ZzThemeController.h>
+#include <QDebug>
+#include <ZzFluentUI/ZzFluentTitleBar.h>
+#include <ZzPureTools/ZzApplicationWindow.h>
+#include <ZzPureTools/ZzPureApplication.h>
+#include <ZzWindowKit/ZzWindowKitBootstrap.h>
 
 int main(int argc, char *argv[])
 {
-    QApplication app(argc, argv);
+    if (!ZzWindowKit::ZzWindowKitBootstrap::prepare()) return 1;
+    ZzPureTools::ZzPureApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("ZzApkInfo"));
     app.setOrganizationName(QStringLiteral("Jackfahdin"));
     app.setApplicationVersion(QStringLiteral(ZZAPK_VERSION));
@@ -22,20 +27,29 @@ int main(int argc, char *argv[])
     parser.process(app);
     if (parser.positionalArguments().size() > 1) parser.showHelp(2);
 
-    // 控制器由应用持有，在 QApplication 销毁样式之后才释放。
-    auto *theme = new ZzFluentUI::ZzThemeController(&app);
-    app.setStyle(new ZzFluentUI::ZzFluentStyle(theme));
-    zzapk::MainWindow window(QCoreApplication::applicationDirPath());
-    window.show();
-    if (!parser.positionalArguments().isEmpty()) window.openFile(parser.positionalArguments().first());
+    const auto built = zzapk::buildApplication(app, QCoreApplication::applicationDirPath(),
+        parser.positionalArguments().value(0));
+    if (!built) {
+        qCritical().noquote() << built.error().technicalMessage();
+        return 1;
+    }
     if (parser.isSet(QStringLiteral("smoke"))) {
-        QTimer::singleShot(300, &app, [&app, &window] {
+        QTimer::singleShot(300, &app, [&app] {
             const auto directory = QCoreApplication::applicationDirPath();
-            const bool ready = window.isVisible() && !window.windowIcon().isNull()
+            bool windowReady = false;
+            for (auto *widget : QApplication::topLevelWidgets()) {
+                auto *window = qobject_cast<ZzPureTools::ZzApplicationWindow *>(widget);
+                if (window && window->isVisible() && !window->windowIcon().isNull()
+                    && window->titleBar()->isVisible() && window->windowAgent()
+                    && window->findChild<zzapk::ApkInfoPage *>()) windowReady = true;
+            }
+            const bool ready = windowReady
                 && QFileInfo::exists(directory + QStringLiteral("/aapt.exe"))
                 && QFileInfo::exists(directory + QStringLiteral("/aapt2.exe"));
             app.exit(ready ? 0 : 1);
         });
     }
-    return app.exec();
+    const auto result = app.exec();
+    app.beginShutdown();
+    return result;
 }

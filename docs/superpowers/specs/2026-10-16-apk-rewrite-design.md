@@ -1,19 +1,20 @@
 # ZzApkInfo 重写设计
 
-用户授权在当前仓库直接重写，并自主调整不合理交互。产品仅支持 Windows，采用 C++20、Qt 6.8+ 与锁定版本的 ZzPureTools，不使用 Designer UI 文件。
+保留原有布局和功能，使用 ZzPureTools 的窗口及控件。产品仅支持 Windows，采用 C++20、Qt 6.8+ 与锁定版本的 ZzPureTools，不使用 Designer UI 文件。
 
 ## 功能与交互
 
-保持 APK 文件选择、窗口拖放、aapt/aapt2 切换、应用名称、包名、启动 Activity、版本名称、MD5、进度和完整 badging 输出。将右键切换工具的自定义按钮替换为普通打开按钮及显式工具下拉框；切换工具自动重新解析当前文件。增加重新解析、取消和可切换置顶，默认保持原来的置顶行为。字段和输出只读、可复制。
+保持 APK 文件选择、窗口拖放、aapt/aapt2 切换、应用名称、包名、启动 Activity、版本名称、MD5、进度和完整 badging 输出。文件行右侧保留「选择·aapt」按钮：左键选择文件、右键切换工具并重新解析。窗口默认置顶，初始 500×731，最小 500×700。保留六行字段、进度条、居中提示和单一输出区。字段和输出只读、可复制。
 
 ## 架构选择
 
-采用 ZzFluentUI 的主题与按钮组件，标准 Qt 表单通过 ZzFluentStyle 统一外观，保留 Windows 原生标题栏。相比搬运原来的界面与线程代码，重写能消除隐藏交互和错误生命周期；相比完整导航框架，单窗口方案不引入无用页面与工作区。
+使用 ZzPureApplication 和 ZzApplicationBuilder 装配 ZzApplicationWindow，提供框架无边框窗口、标题栏和窗口命令。隐藏单页工具不需要的导航面板，页面内使用 ZzPushButton 及 Fluent 样式。
 
 - `src/core/BadgingParser`：按记录解析 aapt 文本，支持转义引号、默认/本地化名称及无启动入口 APK。
 - `src/core/FileHasher`：后台流式计算标准文件 MD5，处理读取失败和取消；内存不随文件大小增长。
 - `src/core/ApkAnalyzer`：异步 QProcess 与专用哈希任务，统一校验输入、状态、取消、超时、退出码和 stderr。新请求取消旧请求，序号隔离过期结果。
-- `src/ui/MainWindow`：纯 C++ 布局、可复制字段、进度/状态、拖放过滤；关闭时安全停止任务。
+- `src/ui/ApkInfoPage`：字段、进度、输出和拖放；关闭时安全停止任务。
+- `src/ui/ApplicationSetup`：装配应用及框架主窗口，配置单页布局和默认置顶。
 - CMake/Windows CI：工具复制、Qt 部署、测试和启动检查，不写入源码目录。
 
 ## 错误修正

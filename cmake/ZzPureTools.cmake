@@ -20,3 +20,7 @@ set(ZZ_BUILD_TESTS OFF CACHE BOOL "Disable dependency tests" FORCE)
 set(ZZ_BUILD_EXAMPLES OFF CACHE BOOL "Disable dependency examples" FORCE)
 set(ZZ_BUILD_BENCHMARKS OFF CACHE BOOL "Disable dependency benchmarks" FORCE)
 add_subdirectory("${ZZAPK_ZZPURETOOLS_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/third_party/ZzPureTools" EXCLUDE_FROM_ALL)
+
+# 固定版本的框架按顶层源码目录查找私有头，嵌入构建时补齐子模块路径。
+target_include_directories(ZzPureTools PRIVATE
+    "${ZZAPK_ZZPURETOOLS_SOURCE_DIR}/ZzFluentUI/widgets/src")
