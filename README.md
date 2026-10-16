@@ -54,10 +54,36 @@ $env:QT_ROOT = 'D:/Qt/6.8.3/msvc2022_64'
 cmake --preset windows-msvc-release
 cmake --build --preset windows-msvc-release --parallel 4
 ctest --preset windows-msvc-release
-cmake --build --preset windows-package
 ```
 
-可执行文件位于 `build/windows-msvc-release/bin/`，完整发布目录位于 `build/windows-msvc-release/dist/`。打包目标仅用于 Release 构建，每次重新生成发布目录。
+可执行文件位于 `build/windows-msvc-release/bin/`。
+
+## Windows 打包
+
+在 x64 Developer PowerShell 中运行统一打包脚本：
+
+```powershell
+.\.github\scripts\package-windows.ps1
+```
+
+脚本会构建 Release 程序、调用 CPack 生成 ZIP，并检查解压后的程序能否独立启动。可以用 `-BuildDirectory` 指定已配置的构建目录。
+
+也可以在完成 Release 编译后直接使用 CPack：
+
+```powershell
+cpack --preset windows-msvc-release
+```
+
+产物统一放在项目根目录的 `dist` 下：
+
+```text
+dist/
+├── ZzApkInfo-1.0.0-windows-x64/
+├── ZzApkInfo-1.0.0-windows-x64.zip
+└── ZzApkInfo-1.0.0-windows-x64.zip.sha256
+```
+
+目录和文件名中的版本号自动读取项目配置，ZIP 内包含同名顶层目录。仅打包程序及 aapt/aapt2、实际依赖的 Qt/MSVC DLL、Windows 平台和 ICO 图标插件，以及许可证；不复制 Qt SDK、未使用的插件、头文件或静态库。
 
 ## 依赖与测试
 
