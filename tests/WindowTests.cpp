@@ -36,12 +36,18 @@ private slots:
         tool->setCurrentIndex(1);
         QCOMPARE(package->text(), QString());
         QTRY_COMPARE(package->text(), "hello");
+        if (const auto preview = qEnvironmentVariable("ZZAPK_PREVIEW_PATH"); !preview.isEmpty()) {
+            window.show();
+            QTest::qWait(150);
+            QVERIFY(window.grab().save(preview));
+        }
         QVERIFY(!window.openFile(dir.filePath("missing.apk")));
         QCOMPARE(package->text(), "hello");
     }
     void outputViewportDrops() {
         zzapk::MainWindow window(QCoreApplication::applicationDirPath());
         window.show();
+        window.findChild<QComboBox *>("tool")->setCurrentIndex(1);
         auto *output = window.findChild<QPlainTextEdit *>("output");
         QVERIFY(output);
         QMimeData mime; mime.setUrls({QUrl::fromLocalFile(apk(QStringLiteral("拖放 空格.apk")))});

@@ -37,6 +37,7 @@ private:
     void drainOutput(QProcess *process);
     void finishIfReady();
     void stopProcess();
+    void startProcess(const QString &input);
     QString toolsDirectory_;
     int timeoutMs_;
     QThreadPool pool_;

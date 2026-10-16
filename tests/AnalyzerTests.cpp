@@ -18,7 +18,7 @@ private slots:
     void success() {
         zzapk::ApkAnalyzer analyzer(tools());
         QSignalSpy done(&analyzer, &zzapk::ApkAnalyzer::finished);
-        QVERIFY(analyzer.analyze(makeApk(QStringLiteral("中文 空格")), zzapk::ApkTool::Aapt));
+        QVERIFY(analyzer.analyze(makeApk(QStringLiteral("中文 空格")), zzapk::ApkTool::Aapt2));
         QTRY_COMPARE(done.size(), 1);
         auto r = qvariant_cast<zzapk::AnalysisResult>(done[0][0]);
         QVERIFY2(r.error.isEmpty(), qPrintable(r.error));

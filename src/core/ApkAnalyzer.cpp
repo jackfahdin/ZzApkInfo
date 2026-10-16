@@ -1,5 +1,8 @@
 #include "ApkAnalyzer.h"
 #include "FileHasher.h"
+#include "FileStager.h"
+#include <algorithm>
+#include <utility>
 #include <QDir>
 #include <QFileInfo>
 #include <QFutureWatcher>
@@ -7,6 +10,12 @@
 #include <QtConcurrentRun>
 
 namespace zzapk {
+namespace {
+struct FileWorkResult {
+    HashResult hash;
+    StagedApk staged;
+};
+}
 ApkAnalyzer::ApkAnalyzer(QString toolsDirectory, QObject *parent, int timeoutMs)
     : QObject(parent), toolsDirectory_(std::move(toolsDirectory)), timeoutMs_(timeoutMs)
 {
@@ -55,9 +64,18 @@ bool ApkAnalyzer::analyze(const QString &path, ApkTool tool)
     emit busyChanged(true);
     emit started(result_.filePath);
 
-    auto *watcher = new QFutureWatcher<HashResult>(this);
-    connect(watcher, &QFutureWatcher<HashResult>::finished, this, [this, watcher, generation] {
-        const auto hash = watcher->result();
+    // 旧 Windows aapt 使用窄字符 argv。父目录通过 UTF-16 工作目录传入，
+    // 非 ASCII 文件名则在后台复制为 input.apk；aapt2 原生支持 Unicode。
+    bool stageInput = false;
+#ifdef Q_OS_WIN
+    const auto fileName = info.fileName();
+    stageInput = tool == ApkTool::Aapt && std::any_of(fileName.begin(), fileName.end(),
+        [](QChar character) { return character.unicode() > 127; });
+#endif
+    auto *watcher = new QFutureWatcher<FileWorkResult>(this);
+    connect(watcher, &QFutureWatcher<FileWorkResult>::finished, this, [this, watcher, generation, stageInput] {
+        const auto work = watcher->result();
+        const auto &hash = work.hash;
         watcher->deleteLater();
         if (generation != generation_ || !busy_) return;
         hashDone_ = true;
@@ -66,15 +84,33 @@ bool ApkAnalyzer::analyze(const QString &path, ApkTool tool)
             if (!result_.error.isEmpty()) result_.error += u'\n';
             result_.error += hash.error;
         }
+        if (stageInput) {
+            if (!hash.error.isEmpty() || hash.cancelled) {
+                processDone_ = true;
+            } else {
+                // 进程被取消后仍可能持有文件；由进程的销毁连接保活临时目录。
+                connect(process_, &QObject::destroyed, [directory = work.staged.directory] {});
+                startProcess(work.staged.path);
+            }
+        }
         finishIfReady();
     });
     watcher->setFuture(QtConcurrent::run(&pool_, [this, generation, path = result_.filePath,
-                                                 token = stop_.get_token()] {
-        return hashFile(path, token, [this, generation](int percent) {
+                                                 token = stop_.get_token(), stageInput] {
+        FileWorkResult work;
+        if (stageInput) {
+            work.staged = stageApk(path, token);
+            if (work.staged.cancelled || !work.staged.error.isEmpty()) {
+                work.hash = {{}, work.staged.error, work.staged.cancelled};
+                return work;
+            }
+        }
+        work.hash = hashFile(stageInput ? work.staged.path : path, token, [this, generation](int percent) {
             QMetaObject::invokeMethod(this, [this, generation, percent] {
                 if (busy_ && generation == generation_) emit progressChanged(percent);
             }, Qt::QueuedConnection);
         });
+        return work;
     }));
 
     auto *process = new QProcess(this);
@@ -110,11 +146,18 @@ bool ApkAnalyzer::analyze(const QString &path, ApkTool tool)
     });
     const auto executable = tool == ApkTool::Aapt ? QStringLiteral("aapt.exe") : QStringLiteral("aapt2.exe");
     process->setProgram(QDir(toolsDirectory_).absoluteFilePath(executable));
-    // 参数列表保证中文、空格和特殊字符不经过 shell 二次解释。
-    process->setArguments({QStringLiteral("dump"), QStringLiteral("badging"), result_.filePath});
-    timeout_.start(timeoutMs_);
-    process->start();
+    if (!stageInput) startProcess(result_.filePath);
     return true;
+}
+
+void ApkAnalyzer::startProcess(const QString &input)
+{
+    const QFileInfo info(input);
+    process_->setWorkingDirectory(info.absolutePath());
+    // 参数列表不经过 shell；相对文件名绕过旧工具对父目录编码的处理。
+    process_->setArguments({QStringLiteral("dump"), QStringLiteral("badging"), QStringLiteral("./") + info.fileName()});
+    timeout_.start(timeoutMs_);
+    process_->start();
 }
 
 void ApkAnalyzer::drainOutput(QProcess *process)

@@ -24,7 +24,7 @@ if(ZZAPK_BUILD_APP)
     include(cmake/ZzPureTools.cmake)
 endif()
 
-add_library(zzapk_core STATIC src/core/BadgingParser.cpp src/core/FileHasher.cpp src/core/ApkAnalyzer.cpp)
+add_library(zzapk_core STATIC src/core/BadgingParser.cpp src/core/FileHasher.cpp src/core/ApkAnalyzer.cpp src/core/FileStager.cpp)
 target_include_directories(zzapk_core PUBLIC src)
 target_link_libraries(zzapk_core PUBLIC Qt6::Core Qt6::Concurrent)
 if(BUILD_TESTING)

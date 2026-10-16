@@ -1,5 +1,6 @@
 #include "core/BadgingParser.h"
 #include "core/FileHasher.h"
+#include "core/FileStager.h"
 #include <QFile>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -75,6 +76,25 @@ private slots:
             R"(application-label:'测试 \"双引号\"')"));
         QCOMPARE(result.metadata.versionName, QStringLiteral("it's \"2\""));
         QCOMPARE(result.metadata.label, QStringLiteral("测试 \"双引号\""));
+    }
+    void stagingCopiesAndCleansUp() {
+        QTemporaryDir dir;
+        const auto input = dir.filePath(QStringLiteral("中文 😀.apk"));
+        QFile file(input); QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("abc"); file.close();
+        QString stagedPath;
+        {
+            const auto staged = zzapk::stageApk(input, {});
+            QVERIFY2(staged.error.isEmpty(), qPrintable(staged.error));
+            QVERIFY(staged.directory); stagedPath = staged.path;
+            QFile copy(stagedPath); QVERIFY(copy.open(QIODevice::ReadOnly));
+            QCOMPARE(copy.readAll(), QByteArray("abc"));
+            QCOMPARE(QFileInfo(stagedPath).fileName(), "input.apk");
+        }
+        QVERIFY(!QFileInfo::exists(stagedPath)); QVERIFY(QFileInfo::exists(input));
+        std::stop_source stop; stop.request_stop();
+        QVERIFY(zzapk::stageApk(input, stop.get_token()).cancelled);
+        QVERIFY(!zzapk::stageApk(dir.filePath("missing.apk"), {}).error.isEmpty());
     }
     void rejectInvalidOutput() {
         QVERIFY(!zzapk::parseBadging("ERROR: invalid APK\n").error.isEmpty());
