@@ -1,3 +1,6 @@
+cmake_minimum_required(VERSION 3.25)
+
+# cmake -P 不继承主项目策略，需要在独立入口声明版本。
 # CPack 安装阶段调用此脚本，暂存目录固定在构建树内部。
 if(NOT CONFIG STREQUAL "Release" OR
    (NOT "@CMAKE_BUILD_TYPE@" STREQUAL "" AND NOT "@CMAKE_BUILD_TYPE@" STREQUAL "Release"))
