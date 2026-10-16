@@ -1,17 +1,52 @@
-name: Windows
+name: Windows Continuous Build
 on:
   push:
+    branches: [master, main]
   pull_request:
+    branches: [master, main]
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  build-test-package:
-    runs-on: windows-2022
+  workflow-checks:
+    name: 发布脚本与工作流检查
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: 检查工作流与发布边界
+        shell: bash
+        run: |
+          set -euo pipefail
+          GOBIN="$RUNNER_TEMP/ci-tools" go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          "$RUNNER_TEMP/ci-tools/actionlint"
+          shellcheck .github/scripts/*.sh .github/scripts/tests/*.sh
+          bash .github/scripts/tests/publish-continuous-test.sh
+
+  build:
+    name: Windows x64 Release
+    runs-on: windows-2022
+    timeout-minutes: 60
+    concurrency:
+      group: windows-build-${{ github.ref }}
+      cancel-in-progress: true
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
+          persist-credentials: false
+      - name: 读取项目版本
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(sed -nE 's/^project\(ZzApkInfo VERSION ([0-9]+\.[0-9]+\.[0-9]+) LANGUAGES CXX\)$/\1/p' CMakeLists.txt)
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
@@ -20,34 +55,56 @@ jobs:
           version: '6.8.3'
           arch: win64_msvc2022_64
           cache: true
-      - name: Configure
+      - name: 配置
         shell: pwsh
         run: |
           "QT_ROOT=$env:QT_ROOT_DIR" >> $env:GITHUB_ENV
           $env:QT_ROOT = $env:QT_ROOT_DIR
           cmake --preset windows-msvc-release
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-      - name: Build
+      - name: 编译
         run: cmake --build --preset windows-msvc-release --parallel 4
-      - name: Test including bundled aapt and aapt2
+      - name: 测试（含真实 aapt / aapt2）
         run: ctest --preset windows-msvc-release
-      - name: Deploy
+      - name: 部署依赖
         run: cmake --build --preset windows-package
-      - name: Smoke test deployed package without SDK PATH
+      - name: 打包、解压检查与 SHA-256 校验
         shell: pwsh
-        run: |
-          $dist = (Resolve-Path 'build/windows-msvc-release/dist').Path
-          $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
-          Remove-Item Env:QT_PLUGIN_PATH -ErrorAction SilentlyContinue
-          Remove-Item Env:QT_QPA_PLATFORM_PLUGIN_PATH -ErrorAction SilentlyContinue
-          $process = Start-Process "$dist/ZzApkInfo.exe" -ArgumentList '--smoke' -WorkingDirectory $env:TEMP -PassThru
-          if (-not $process.WaitForExit(15000)) {
-            $process.Kill()
-            throw 'Deployed application timed out'
-          }
-          if ($process.ExitCode -ne 0) { throw "Smoke failed: $($process.ExitCode)" }
-      - uses: actions/upload-artifact@v4
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: ./.github/scripts/package-windows.ps1 -Version $env:RELEASE_VERSION
+      - uses: actions/upload-artifact@v7
         with:
-          name: ZzApkInfo-windows-x64
-          path: build/windows-msvc-release/dist/
+          name: packages-windows
+          path: build/windows-msvc-release/artifacts/*
           if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+  publish:
+    name: 更新 continuous-build 预发布
+    needs: [workflow-checks, build]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    concurrency:
+      group: publish-continuous-windows
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages-windows
+          path: release-input
+      - name: 校验并发布
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+        run: bash .github/scripts/publish-continuous.sh
