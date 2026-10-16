@@ -1,0 +1,26 @@
+cmake_minimum_required(VERSION 3.25)
+project(ZzApkInfo VERSION 1.0.0 LANGUAGES CXX)
+
+option(ZZAPK_DEVELOPER_CHECKS "Allow non-Windows builds for development checks only" OFF)
+option(ZZAPK_BUILD_APP "Build the desktop application" ON)
+if(NOT WIN32 AND NOT ZZAPK_DEVELOPER_CHECKS)
+    message(FATAL_ERROR "ZzApkInfo only supports Windows. Use ZZAPK_DEVELOPER_CHECKS for local tests.")
+endif()
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC OFF)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+if(MSVC)
+    add_compile_options(/utf-8 /permissive- /Zc:__cplusplus)
+endif()
+include(CTest)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Concurrent)
+
+if(ZZAPK_BUILD_APP)
+    include(cmake/ZzPureTools.cmake)
+endif()
+
+# 业务与测试在后续分类提交中添加，构建配置不生成任何源码文件。

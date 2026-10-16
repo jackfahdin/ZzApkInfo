@@ -1,0 +1,8 @@
+Android Asset Packaging Tool (aapt / aapt2)
+Source: Android Open Source Project, frameworks/base/tools/aapt and tools/aapt2
+https://android.googlesource.com/platform/frameworks/base/
+The binaries in this directory were inherited unchanged from QApkInfo/thirdParty.
+The original repository did not record the exact SDK release or full binary notices.
+For redistribution with a different Android SDK distribution, retain that distribution's NOTICE files.
+AOSP source is generally licensed under Apache License 2.0; linked third-party components may have additional licenses.
+https://www.apache.org/licenses/LICENSE-2.0
