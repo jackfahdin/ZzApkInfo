@@ -20,14 +20,38 @@ include(CTest)
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Concurrent)
 
 if(ZZAPK_BUILD_APP)
+    find_package(Qt6 6.8 REQUIRED COMPONENTS Gui Widgets Svg)
     include(cmake/ZzPureTools.cmake)
 endif()
 
-# 业务与测试在后续分类提交中添加，构建配置不生成任何源码文件。
 add_library(zzapk_core STATIC src/core/BadgingParser.cpp src/core/FileHasher.cpp src/core/ApkAnalyzer.cpp)
 target_include_directories(zzapk_core PUBLIC src)
 target_link_libraries(zzapk_core PUBLIC Qt6::Core Qt6::Concurrent)
 if(BUILD_TESTING)
     find_package(Qt6 6.8 REQUIRED COMPONENTS Test)
     add_subdirectory(tests)
+endif()
+if(ZZAPK_BUILD_APP)
+    add_library(zzapk_ui STATIC src/ui/MainWindow.cpp)
+    target_include_directories(zzapk_ui PUBLIC src)
+    target_link_libraries(zzapk_ui PUBLIC zzapk_core Zz::FluentUI)
+    qt_add_executable(ZzApkInfo WIN32 src/main.cpp resources/app.qrc)
+    target_link_libraries(ZzApkInfo PRIVATE zzapk_ui)
+    target_compile_definitions(ZzApkInfo PRIVATE ZZAPK_VERSION="${PROJECT_VERSION}")
+    add_custom_command(TARGET ZzApkInfo POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/tools/aapt.exe"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tools/aapt2.exe"
+            "$<TARGET_FILE_DIR:ZzApkInfo>"
+    )
+    if(BUILD_TESTING)
+        add_test(NAME startup COMMAND ZzApkInfo --smoke)
+        set_tests_properties(startup PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 15)
+        add_executable(window_tests tests/WindowTests.cpp)
+        target_link_libraries(window_tests PRIVATE zzapk_ui Qt6::Test)
+        set_target_properties(window_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests/bin")
+        add_dependencies(window_tests fake_aapt)
+        add_test(NAME window COMMAND window_tests)
+        set_tests_properties(window PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+    endif()
 endif()
