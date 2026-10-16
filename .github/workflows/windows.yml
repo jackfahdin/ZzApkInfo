@@ -65,7 +65,26 @@ jobs:
       - name: 编译
         run: cmake --build --preset windows-msvc-release --parallel 4
       - name: 测试（含真实 aapt / aapt2）
-        run: ctest --preset windows-msvc-release
+        shell: pwsh
+        run: |
+          $env:ZZAPK_PREVIEW_PATH = Join-Path $PWD 'build/windows-msvc-release/window-preview.png'
+          ctest --preset windows-msvc-release
+          $testExit = $LASTEXITCODE
+          if (Test-Path 'build/windows-msvc-release/window-tests.txt') {
+            Get-Content 'build/windows-msvc-release/window-tests.txt'
+          }
+          exit $testExit
+      - name: 保留测试日志与界面截图
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-test-results
+          path: |
+            build/windows-msvc-release/window-tests.txt
+            build/windows-msvc-release/window-preview.png
+            build/windows-msvc-release/Testing/Temporary/LastTest.log
+          if-no-files-found: ignore
+          retention-days: 14
       - name: 部署依赖
         run: cmake --build --preset windows-package
       - name: 打包、解压检查与 SHA-256 校验
