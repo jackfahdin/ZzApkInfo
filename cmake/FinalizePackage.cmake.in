@@ -1,0 +1,13 @@
+# CPack 完成 ZIP 后输出配套的便携目录及 SHA-256 校验文件。
+set(output "@PROJECT_SOURCE_DIR@/dist")
+set(name "@CPACK_PACKAGE_FILE_NAME@")
+file(MAKE_DIRECTORY "${output}")
+foreach(archive IN LISTS CPACK_PACKAGE_FILES)
+    get_filename_component(archiveName "${archive}" NAME)
+    file(SHA256 "${archive}" digest)
+    file(WRITE "${output}/${archiveName}.sha256" "${digest}  ${archiveName}\n")
+endforeach()
+file(REMOVE_RECURSE "${output}/${name}")
+file(MAKE_DIRECTORY "${output}/${name}")
+file(COPY "@CMAKE_BINARY_DIR@/dist/" DESTINATION "${output}/${name}")
+message(STATUS "Portable directory: ${output}/${name}")

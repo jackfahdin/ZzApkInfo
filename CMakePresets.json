@@ -36,5 +36,13 @@
       "execution": {"noTestsAction": "error"},
       "environment": {"PATH": "$env{QT_ROOT}/bin;$penv{PATH}"}
     }
+  ],
+  "packagePresets": [
+    {
+      "name": "windows-msvc-release",
+      "configurePreset": "windows-msvc-release",
+      "generators": ["ZIP"],
+      "configurations": ["Release"]
+    }
   ]
 }

@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
             bool windowReady = false;
             for (auto *widget : QApplication::topLevelWidgets()) {
                 auto *window = qobject_cast<ZzPureTools::ZzApplicationWindow *>(widget);
-                if (window && window->isVisible() && !window->windowIcon().isNull()
+                if (window && window->isVisible() && !window->windowIcon().pixmap(32, 32).isNull()
                     && window->titleBar()->isVisible() && window->windowAgent()
                     && window->findChild<zzapk::ApkInfoPage *>()) windowReady = true;
             }
